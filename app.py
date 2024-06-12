@@ -14,16 +14,45 @@ def main():
     bucket_name = "python-test-bucket"
 
     # Список всех объектов в бакете
-    print('Все файлы:\n')
-    print(f"Объекты в бакете '{bucket_name}':\n")
+
     objects = client.list_objects(bucket_name, recursive=True)
     LIST_ERROR = []
     find_time = '2024-06-10'  # дата по которой ищем загрузки
-    # find_file = '2024-06-10.csv'  # файл который будем искать во всех папках, здесь можно строку закоментить
-
+    find_file = '2024-06-10.csv'  # файл который будем искать во всех папках, здесь можно строку закоментить
+    # шаблон по которому ищем:
+    ftp = {
+        'Калужская область': {
+            'regions': ['Калуга', 'Калужская область'],
+            'source': ['full_objects', 'prices', 'deals'],
+            'files_template': ['2024-06-11.csv']
+        },
+        'Московская область': {
+            'regions': ['Московская область', 'Москва'],
+            'source': ['full_objects', 'prices', 'deals'],
+            'files_template': ['2024-06-11.csv', 'file_n.xlsx']
+        },
+    }
+    # струткура из шаблона по которой будем искать:
+    file_path_list = []
+    for main_area, second_param in ftp.items():
+        for folder in second_param['source']:
+            for town in second_param['regions']:
+                for name_file in second_param['files_template']:
+                    file_path = f'{folder}/{main_area}/{town}/{name_file}'
+                    if file_path.endswith('.xlsx') is True and file_path.startswith('prices') is True:
+                        # print('1: ', file_path)
+                        file_path_list.append(file_path)
+                    elif file_path.endswith('.csv') is True and file_path.startswith('prices') is False:
+                        # print('1: ', file_path)
+                        file_path_list.append(file_path)
+    for i in file_path_list:
+        print(i)
+    print('Все файлы найденные в бакете:\n')
     counter = 0
     for obj in objects:
         name_file = obj.object_name
+        # print(name_file)
+        # if name_file in file_path_list:
         date = client.stat_object(bucket_name, name_file).last_modified
         print(name_file)
         print(f'date_modification: {date}\n')
@@ -56,12 +85,12 @@ def main():
         except BaseException:
             pass
 
+
     print('\nОшибки:\n')
     for i in LIST_ERROR:
         print(i)
 
     return LIST_ERROR
-
 
 # Инициализация бота с вашим токеном
 bot = telebot.TeleBot('6985148923:AAHwmhG0KogYrTRho9A6gWCtHTT30AsXGag')

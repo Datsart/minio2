@@ -1,5 +1,4 @@
 from minio import Minio
-from minio.error import S3Error
 import telebot
 import json
 from app2 import FIND_FILE
@@ -26,20 +25,18 @@ def main():
     for obj in objects:
         name_file = obj.object_name
         date = client.stat_object(bucket_name, name_file).last_modified
-        # print(name_file)
+        print(name_file)
+        print(f'date_modification: {date}\n')
         if find_file_xlsx in name_file and 'prices' not in name_file:  # проверка на нахождение файла xlsx по папкам:
             list_split_name = name_file.split('/')
             foler = list_split_name[0]
             list_error.append(f'{find_file_xlsx} - в папке: {foler} - не верно')
-        elif FIND_FILE not in name_file:
+        elif FIND_FILE not in name_file:  # проверка файлов по шаблону во всех папках
             list_split_name = name_file.split('/')
-            print(list_split_name)
             list_error.append(
                 f"Файл - {list_split_name[-1]} - не валидный в папке - {list_split_name[0]} - {list_split_name[1]} - {list_split_name[2]}")
-        # print(f'date_modification: {date}\n')
         # создание словаря со структурой папок и файлов ИЗ БАКЕТА
         splitting_list_name_file = name_file.split('/')
-
         source = splitting_list_name_file[0]
         region = splitting_list_name_file[1]
         subregion = splitting_list_name_file[2]
@@ -60,13 +57,7 @@ def main():
     a = json.dumps(dict_structure_bucket, indent=2, ensure_ascii=False)
     # print(a)
     find_file_csv = FIND_FILE + '.csv'
-    if find_file_csv.endswith('.csv') is True:  # берем только csv файлы
-        for one, two in dict_structure_bucket.items():
-            for three, four in two.items():
-                for i, j in four.items():
-                    if find_file_csv not in j:
-                        list_error.append(f'{find_file_csv} - нету в {one} - {three} - {i}')
-    if find_file_xlsx.endswith('.xlsx') is True:  # берем только xlsx файлы
+    if find_file_csv.endswith('.csv') is True:  # берем только csv файлы; проверка на нахождение csv в папках
         for one, two in dict_structure_bucket.items():
             for three, four in two.items():
                 for i, j in four.items():
@@ -79,10 +70,8 @@ def main():
     return list_error
 
 
-# Инициализация бота с вашим токеном
 bot = telebot.TeleBot('6985148923:AAHwmhG0KogYrTRho9A6gWCtHTT30AsXGag')
 
-# Замените 'YOUR_CHAT_ID' на реальный chat_id, полученный ранее
 chat_id = '1141944164'
 
 
@@ -91,8 +80,6 @@ def send_errors(chat_id, list_error):
     errors_message = '\nОшибки:\n'
     for error in list_error:
         errors_message += f"{error}\n"
-
-    # Отправка сообщения
     bot.send_message(chat_id, errors_message)
 
 
