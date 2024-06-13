@@ -1,5 +1,5 @@
 import json
-from settings import find_file_func, client_connection, telegram_settings
+from settings import find_file_func, client_connection, telegram_settings, find_folder, return_ftp, formates_in_folders
 
 
 def main():
@@ -7,30 +7,44 @@ def main():
     bucket_name = client_connection()['bucket_name']
     objects = client.list_objects(bucket_name, recursive=True)
     list_error = []
-    # Список всех объектов в бакете
-    print('Все файлы, найденные в бакете:\n')
+    list_path_only_folders = []  # список одних путей в бакете (без названий файлов)
     dict_structure_bucket = {}  # словарь со структурой бакета
+
+    print('Все файлы, найденные в бакете:\n')
 
     find_file_xlsx = find_file_func() + '.xlsx'
     for obj in objects:
         name_file = obj.object_name
         date = client.stat_object(bucket_name, name_file).last_modified
+        splitting_list_name_file = name_file.split('/')
+
+        print(name_file)
+
+        # проверка на соответсвие расширений в папках
+        if f'{splitting_list_name_file[0]} {splitting_list_name_file[-1].split('.')[-1]}' not in formates_in_folders():
+            list_error.append(
+                f'не верный формат файла в - {splitting_list_name_file[0]} - {splitting_list_name_file[1]} {splitting_list_name_file[2]}')
 
         # вывод  имен файлов и дата их последнего изменения
-        print(name_file)
         print(f'date_modification: {date}\n')
-        if find_file_xlsx in name_file and 'prices' not in name_file:  # проверка на нахождение файла xlsx по папкам:
+
+        # проверка на нахождение файла xlsx по папкам:
+        if find_file_xlsx in name_file and 'prices' not in name_file:
             list_split_name = name_file.split('/')
-            print(list_split_name)
             foler = list_split_name[0]
             list_error.append(f'{find_file_xlsx} - в папке: {foler} - не верно')
-        elif find_file_func() not in name_file:  # проверка файлов по шаблону во всех папках
+
+        # проверка файлов по шаблону во всех папках
+        elif find_file_func() not in name_file:
             list_split_name = name_file.split('/')
             list_error.append(
                 f"Файл - {list_split_name[-1]} - не валидный в папке - {list_split_name[0]} - {list_split_name[1]} - {list_split_name[2]}")
 
         # создание словаря со структурой папок и файлов ИЗ БАКЕТА
-        splitting_list_name_file = name_file.split('/')
+
+        list_path_only_folders.append(
+            '/'.join(splitting_list_name_file[:-1]))  # добавление путей файлов в список (без самих файлов)
+
         source = splitting_list_name_file[0]
         region = splitting_list_name_file[1]
         subregion = splitting_list_name_file[2]
@@ -57,6 +71,12 @@ def main():
                 for i, j in four.items():
                     if find_file_csv not in j:
                         list_error.append(f'{find_file_csv} - нету в {one} - {three} - {i}')
+
+    # проверка сущестования папок из шаблона в бакете
+    for i in find_folder(return_ftp()):
+        if i not in list_path_only_folders:
+            list_error.append(f'Иерархия {i} - нарушена в бакете')
+
     print('\nОшибки:\n')
     for i in list_error:
         print(i)
