@@ -1,40 +1,34 @@
-from minio import Minio
-import telebot
 import json
-from app2 import FIND_FILE
+from settings import find_file_func, client_connection, telegram_settings
 
 
 def main():
-    # Создаем клиента для подключения к MinIO серверу с указанными ключами доступа
-    client = Minio("play.min.io",
-                   access_key="Q3AM3UQ867SPQQA43P2F",
-                   secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
-                   )
-
-    # Название бакета
-    bucket_name = "python-test-bucket"
-
-    # Список всех объектов в бакете
+    client = client_connection()['client']
+    bucket_name = client_connection()['bucket_name']
     objects = client.list_objects(bucket_name, recursive=True)
     list_error = []
-
+    # Список всех объектов в бакете
     print('Все файлы, найденные в бакете:\n')
     dict_structure_bucket = {}  # словарь со структурой бакета
 
-    find_file_xlsx = FIND_FILE + '.xlsx'
+    find_file_xlsx = find_file_func() + '.xlsx'
     for obj in objects:
         name_file = obj.object_name
         date = client.stat_object(bucket_name, name_file).last_modified
+
+        # вывод  имен файлов и дата их последнего изменения
         print(name_file)
         print(f'date_modification: {date}\n')
         if find_file_xlsx in name_file and 'prices' not in name_file:  # проверка на нахождение файла xlsx по папкам:
             list_split_name = name_file.split('/')
+            print(list_split_name)
             foler = list_split_name[0]
             list_error.append(f'{find_file_xlsx} - в папке: {foler} - не верно')
-        elif FIND_FILE not in name_file:  # проверка файлов по шаблону во всех папках
+        elif find_file_func() not in name_file:  # проверка файлов по шаблону во всех папках
             list_split_name = name_file.split('/')
             list_error.append(
                 f"Файл - {list_split_name[-1]} - не валидный в папке - {list_split_name[0]} - {list_split_name[1]} - {list_split_name[2]}")
+
         # создание словаря со структурой папок и файлов ИЗ БАКЕТА
         splitting_list_name_file = name_file.split('/')
         source = splitting_list_name_file[0]
@@ -53,10 +47,10 @@ def main():
 
         dict_structure_bucket[source][region][subregion].append(file_name)
 
-    # print(dict_structure_bucket)
     a = json.dumps(dict_structure_bucket, indent=2, ensure_ascii=False)
     # print(a)
-    find_file_csv = FIND_FILE + '.csv'
+
+    find_file_csv = find_file_func() + '.csv'
     if find_file_csv.endswith('.csv') is True:  # берем только csv файлы; проверка на нахождение csv в папках
         for one, two in dict_structure_bucket.items():
             for three, four in two.items():
@@ -70,19 +64,16 @@ def main():
     return list_error
 
 
-bot = telebot.TeleBot('6985148923:AAHwmhG0KogYrTRho9A6gWCtHTT30AsXGag')
-
-chat_id = '1141944164'
-
-
 def send_errors(chat_id, list_error):
     # Формирование сообщения
     errors_message = '\nОшибки:\n'
     for error in list_error:
         errors_message += f"{error}\n"
-    bot.send_message(chat_id, errors_message)
+    chat_id = telegram_settings()['chat_id']
+    telegram_settings()['bot'].send_message(chat_id, errors_message)
 
 
 if __name__ == "__main__":
     list_error = main()
-    send_errors(chat_id, list_error)
+    settings = telegram_settings()
+    send_errors(settings['chat_id'], list_error)
