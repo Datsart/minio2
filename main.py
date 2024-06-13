@@ -23,7 +23,7 @@ def main():
         # проверка на соответсвие расширений в папках
         if f'{splitting_list_name_file[0]} {splitting_list_name_file[-1].split('.')[-1]}' not in formates_in_folders():
             list_error.append(
-                f'не верный формат файла в - {splitting_list_name_file[0]} - {splitting_list_name_file[1]} {splitting_list_name_file[2]}')
+                f'не верный формат файла в - {splitting_list_name_file[0]} - {splitting_list_name_file[1]} - {splitting_list_name_file[2]}')
 
         # вывод  имен файлов и дата их последнего изменения
         print(f'date_modification: {date}\n')
