@@ -96,4 +96,5 @@ def send_errors(chat_id, list_error):
 if __name__ == "__main__":
     list_error = main()
     settings = telegram_settings()
-    send_errors(settings['chat_id'], list_error)
+    for id in settings['chat_id']:
+        send_errors(id, list_error)

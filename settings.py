@@ -48,7 +48,7 @@ def telegram_settings():
     '''настройки телеграмм бота'''
     settings_dict = {}
     settings_dict['bot'] = telebot.TeleBot('6985148923:AAHwmhG0KogYrTRho9A6gWCtHTT30AsXGag')  # свой токен
-    settings_dict['chat_id'] = '1141944164'  # свой chat_id
+    settings_dict['chat_id'] = ['1141944164', '22222']  # свой chat_id
     return settings_dict
 
 
