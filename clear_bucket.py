@@ -14,8 +14,9 @@ bucket_name = "python-test-bucket"
 objects = client.list_objects(bucket_name, recursive=True)
 
 # Удаление каждого объекта
-for obj in objects:
-    client.remove_object(bucket_name, obj.object_name)
-    print(f"Удален объект: {obj.object_name}")
+# for obj in objects:
+#     client.remove_object(bucket_name, obj.object_name)
+#     print(f"Удален объект: {obj.object_name}")
+client.remove_object(bucket_name, 'my-test-file.txt')
 
 print(f"Бакет {bucket_name} очищен.")
