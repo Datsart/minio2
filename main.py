@@ -1,18 +1,20 @@
 import json
-from settings import find_file_func, client_connection, telegram_settings, find_folder, return_ftp, formates_in_folders
+from helpers import formates_in_folders, find_folder
+from settings import Settings
 import re
+import telebot
 
 
 def main():
-    client = client_connection()['client']
-    bucket_name = client_connection()['bucket_name']
+    client = Settings.client
+    bucket_name = Settings.bucket_name
     objects = list(client.list_objects(bucket_name, recursive=True))  # Преобразуем в список сразу
     list_error = []
     list_path_only_folders = []  # список одних путей в бакете (без названий файлов)
     list_full_path_name = []  # список полныйх путей файлов в бакете (с названиями файлов)
     dict_structure_bucket = {}  # словарь со структурой бакета
     list_names_file = []
-    pattern = [j for i, j in return_ftp().items()][0]['files_template']  # r'^\d{4}-\d{2}-\d{2}$'
+    pattern = [j for i, j in Settings.ftp.items()][0]['files_template']  # r'^\d{4}-\d{2}-\d{2}$'
 
     print('Все файлы, найденные в бакете:\n')
 
@@ -36,10 +38,10 @@ def main():
 
         print(name_file)
 
-        # # проверка на соответсвие расширений в папках
-        # if f'{splitting_list_name_file[0]} {splitting_list_name_file[-1].split(".")[-1]}' not in formates_in_folders():
-        #     list_error.append(
-        #         f'неверный формат файла {splitting_list_name_file[-1]} в - {splitting_list_name_file[0]} - {splitting_list_name_file[1]} - {splitting_list_name_file[2]}')
+        # проверка на соответсвие расширений в папках
+        if f'{splitting_list_name_file[0]} {splitting_list_name_file[-1].split(".")[-1]}' not in formates_in_folders():
+            list_error.append(
+                f'неверный формат файла {splitting_list_name_file[-1]} в - {splitting_list_name_file[0]} - {splitting_list_name_file[1]} - {splitting_list_name_file[2]}')
 
         # вывод  имен файлов и дата их последнего изменения
         print(f'date_modification: {date}\n')
@@ -86,7 +88,7 @@ def main():
     # print(a)
 
     # проверка сущестования папок из шаблона в бакете
-    for i in find_folder(return_ftp()):
+    for i in find_folder():
         if i not in list_path_only_folders:
             list_error.append(f'Иерархия {i} - нарушена в бакете')
 
@@ -117,13 +119,13 @@ def send_errors(chat_id):
     errors_message = '\nОшибки:\n'
     for error in list_error:
         errors_message += f"{error}\n"
-    chat_id = telegram_settings()['chat_id']
+    chat_id = Settings.telegram_chat_id_list
+    bot = telebot.TeleBot(Settings.telegram_token)
     for i in chat_id:
-        telegram_settings()['bot'].send_message(i, errors_message)
+        bot.send_message(i, errors_message)
 
 
 if __name__ == "__main__":
     list_error = main()
-    settings = telegram_settings()
-    for id in settings['chat_id']:
+    for id in Settings.telegram_chat_id_list:
         send_errors(id)
