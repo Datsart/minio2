@@ -1,5 +1,3 @@
-from minio import Minio
-import telebot
 from settings import Settings
 
 
@@ -15,28 +13,6 @@ def formates_in_folders():
         for k in j:
             list_formates.append(f'{i} {k}')
     return list_formates  # ['full_objects csv', 'prices csv', 'deals csv']
-
-
-def client_connection():
-    '''словарь с настройками бакета'''
-    dict_info = {}
-    # Создаем клиента для подключения к MinIO серверу с указанными ключами доступа
-    client = Minio("play.min.io",
-                   access_key="Q3AM3UQ867SPQQA43P2F",
-                   secret_key="zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG",
-                   )
-    bucket_name = "python-test-bucket"
-    dict_info['client'] = client
-    dict_info['bucket_name'] = bucket_name
-    return dict_info
-
-
-def telegram_settings():
-    '''настройки телеграмм бота'''
-    settings_dict = {}
-    settings_dict['bot'] = telebot.TeleBot('6985148923:AAHwmhG0KogYrTRho9A6gWCtHTT30AsXGag')  # свой токен
-    settings_dict['chat_id'] = ['1141944164']  # свой chat_id
-    return settings_dict
 
 
 def find_folder():
