@@ -3,13 +3,8 @@ from settings import Settings
 
 def formates_in_folders():
     '''указываем форматы файлов в паках'''
-    extension_template = {
-        'full_objects': ['csv'],
-        'prices': ['csv'],
-        'deals': ['csv'],
-    }
     list_formates = []
-    for i, j in extension_template.items():
+    for i, j in Settings.extension_template.items():
         for k in j:
             list_formates.append(f'{i} {k}')
     return list_formates  # ['full_objects csv', 'prices csv', 'deals csv']

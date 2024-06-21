@@ -2,19 +2,19 @@ from minio import Minio
 
 
 class Settings:
+    # расширения
+    extension_template = {
+        # 'full_objects': ['csv'],
+        'prices': ['csv', 'xlsx'],
+        # 'deals': ['csv', 'xlsx'],
+    }
     # шаблон
     ftp = {
         'Калужская область': {
             'regions': ['Калуга', 'Калужская область'],
-            'source': ['full_objects', 'prices', 'deals'],
+            'source': extension_template,
             'files_template': r'^\d{4}-\d{2}-\d{2}$',  # сюда пишем регулярку
         },
-    }
-    # расширения в каких папках
-    extension_template = {
-        'full_objects': ['csv'],
-        'prices': ['csv'],
-        'deals': ['csv'],
     }
 
     # настройка клиента

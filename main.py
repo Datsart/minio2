@@ -16,74 +16,58 @@ def main():
     list_names_file = []
     pattern = [j for i, j in Settings.ftp.items()][0]['files_template']  # r'^\d{4}-\d{2}-\d{2}$'
 
-    print('Все файлы, найденные в бакете:\n')
-
     # взяли все файлы, отобрали только те что проходят регулярку (уникальные файлы)
     for i in objects:
         name_file = i.object_name
         list_full_path_name.append(name_file)
         splitting_list_name_file = name_file.split('/')  # deals/Калужская область/Калуга/2024-06-10.csv
-        if re.search(pattern, splitting_list_name_file[-1].split('.')[-2]) is not None:
-            list_names_file.append(splitting_list_name_file[-1])
-        else:
-            list_error.append(f"{name_file} - не валидный")
+        a = '/'.join(splitting_list_name_file[:3])  # deals/Калужская область/Калуга
+        if a in find_folder():
+            if re.search(pattern, splitting_list_name_file[-1].split('.')[-2]) is not None:
+                list_names_file.append(splitting_list_name_file[-1])
+            else:
+                list_error.append(f"{name_file} - не валидный")
     set_names_file = list(set(list_names_file))
+
+    print('Файлы, найденные в бакете по указанному шаблону:\n')
 
     # проход по всем файлам
     for obj in objects:
         try:  # на случай лиших файлов в бакете, или файл вне структуры
             name_file = obj.object_name
             date = client.stat_object(bucket_name, name_file).last_modified
-            splitting_list_name_file = name_file.split('/')  # deals/Калужская область/Калуга/2024-06-10.csv
-            yyyy_mm_dd = splitting_list_name_file[-1].split('.')[-2]  # 2020-05-01
+            splitting_list_name_file = name_file.split('/')  # deals/Калужская область/Калуга/2024-06-10.csv - list
+            a = '/'.join(splitting_list_name_file[:3])  # deals/Калужская область/Калуга
+            # поиск файлов только в указанных папках:
+            if a in find_folder():
+                # вывод  имен файлов и дата их последнего изменения
+                print(name_file)
+                print(f'date_modification: {date}\n')
 
-            print(name_file)
-
-            # проверка на соответсвие расширений в папках
-            if f'{splitting_list_name_file[0]} {splitting_list_name_file[-1].split(".")[-1]}' not in formates_in_folders():
-                list_error.append(
-                    f'неверный формат файла {splitting_list_name_file[-1]} в - {splitting_list_name_file[0]} - {splitting_list_name_file[1]} - {splitting_list_name_file[2]}')
-
-            # вывод  имен файлов и дата их последнего изменения
-            print(f'date_modification: {date}\n')
-
-            # проверка на нахождение файла xlsx по папкам:
-            # берем только файлы проходящие проверку по паттерну из шаблона:
-            if re.match(pattern, yyyy_mm_dd) is not None:
-                find_file_xlsx = yyyy_mm_dd + '.xlsx'
-                if find_file_xlsx in name_file and 'prices' not in name_file:
-                    foler = splitting_list_name_file[0]
-                    list_error.append(f'{find_file_xlsx} - в папке: {foler} - не верно')
-
-            # проверка файлов по шаблону во всех папках; берем только csv файлы соответсвующие паттерну из шаблона
-            elif re.match(pattern, yyyy_mm_dd) is not None:
-                find_file_csv = yyyy_mm_dd + '.csv'
-                if find_file_csv not in name_file:
+                # проверка на соответсвие расширений в папках
+                if f'{splitting_list_name_file[0]} {splitting_list_name_file[-1].split(".")[-1]}' not in formates_in_folders():
                     list_error.append(
-                        f"Файл - {splitting_list_name_file[-1]} - не валидный в папке - {splitting_list_name_file[0]} - {splitting_list_name_file[1]} - {splitting_list_name_file[2]}")
-            else:
-                list_error.append(f'{splitting_list_name_file[-1]} - не соответсвует паттерну из шаблона')
+                        f'неверный формат файла или вовсе нету в: {splitting_list_name_file[-1]} в - {splitting_list_name_file[0]} - {splitting_list_name_file[1]} - {splitting_list_name_file[2]}')
 
-            # создание словаря со структурой папок и файлов ИЗ БАКЕТА
+                # создание словаря со структурой папок и файлов ИЗ БАКЕТА
 
-            list_path_only_folders.append(
-                '/'.join(splitting_list_name_file[:-1]))  # добавление путей файлов в список (без самих файлов)
+                list_path_only_folders.append(
+                    '/'.join(splitting_list_name_file[:-1]))  # добавление путей файлов в список (без самих файлов)
+                source = splitting_list_name_file[0]
+                region = splitting_list_name_file[1]
+                subregion = splitting_list_name_file[2]
+                file_name = splitting_list_name_file[3]
 
-            source = splitting_list_name_file[0]
-            region = splitting_list_name_file[1]
-            subregion = splitting_list_name_file[2]
-            file_name = splitting_list_name_file[3]
+                if source not in dict_structure_bucket:
+                    dict_structure_bucket[source] = {}
 
-            if source not in dict_structure_bucket:
-                dict_structure_bucket[source] = {}
+                if region not in dict_structure_bucket[source]:
+                    dict_structure_bucket[source][region] = {}
 
-            if region not in dict_structure_bucket[source]:
-                dict_structure_bucket[source][region] = {}
+                if subregion not in dict_structure_bucket[source][region]:
+                    dict_structure_bucket[source][region][subregion] = []
 
-            if subregion not in dict_structure_bucket[source][region]:
-                dict_structure_bucket[source][region][subregion] = []
-
-            dict_structure_bucket[source][region][subregion].append(file_name)
+                dict_structure_bucket[source][region][subregion].append(file_name)
         except BaseException as e:
             print(e)
             list_error.append(f"{name_file} - не в структуре")
@@ -96,17 +80,16 @@ def main():
         if i not in list_path_only_folders:
             list_error.append(f'Иерархия {i} - нарушена в бакете')
 
-    # проверка csv и xlsx файлов по папкам на сущесвтование
+    # проверка  файлов по папкам на сущесвтование; xlsx  только в prices
     for name in set_names_file:
-        if name.endswith('.csv') or name.endswith('.xlsx'):
-            for one, two in dict_structure_bucket.items():
-                # проверка для xlsx файлов на нахождение только в 'prices'
-                if name.endswith('.xlsx') and one != 'prices':
-                    continue
-                for three, four in two.items():
-                    for i, j in four.items():
-                        if name not in j:
-                            list_error.append(f'{name} - нету в {one} - {three} - {i}')
+        for one, two in dict_structure_bucket.items():
+            # проверка для xlsx файлов на нахождение только в 'prices'
+            if name.endswith('.xlsx') and one != 'prices':
+                continue
+            for three, four in two.items():
+                for i, j in four.items():
+                    if name not in j:
+                        list_error.append(f'{name} - нету в {one} - {three} - {i}')
 
     # преобразование списка во сножество и сортировка для корректного вывода
     set_error = set(list_error)
